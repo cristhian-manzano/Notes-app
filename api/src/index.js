@@ -1,7 +1,10 @@
 const express = require('express');
+const process = require('process');
 const helmet = require('helmet');
 const cors = require('cors');
 
+const ApiError = require('./errors/customError');
+const { errorResponse } = require('./helpers/httpResponses');
 const routes = require('./routes/index');
 
 const app = express();
@@ -14,10 +17,32 @@ app.use(express.urlencoded({ extended: true }));
 // routes
 app.use('/v1/api', routes);
 
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  // Log errors
+
+  if (err instanceof ApiError)
+    return res
+      .status(err.httpCode)
+      .json(errorResponse(res.statusCode, err.message));
+
+  return res
+    .status(500)
+    .json(errorResponse(res.statusCode, 'Internal server Error'));
+});
+
+// Handle Exceptions
+process.on('unhandledRejection', (reason) => {
+  throw reason;
+});
+
+process.on('uncaughtException', (err) => {
+  // Log error (Morgan - winston)
+  console.log(err); // eslint-disable-line no-console
+});
+
 const PORT = process.env.APP_PORT ?? 3000;
 
 app.listen(PORT, () => {
-  /* eslint-disable no-console */
-  console.log(`Running in port ${PORT}`);
-  /* eslint-enable no-console */
+  console.log(`Running in port ${PORT}`); // eslint-disable-line no-console
 });
