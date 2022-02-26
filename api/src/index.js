@@ -6,9 +6,12 @@ const cors = require('cors');
 const ApiError = require('./errors/customError');
 const { errorResponse } = require('./helpers/httpResponses');
 const routes = require('./routes/index');
+const morganMiddleware = require('./config/morgan');
+const Logger = require('./config/logger');
 
 const app = express();
 
+app.use(morganMiddleware);
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
@@ -19,7 +22,7 @@ app.use('/v1/api', routes);
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  // Log errors
+  Logger.error(err);
 
   if (err instanceof ApiError)
     return res
@@ -37,12 +40,11 @@ process.on('unhandledRejection', (reason) => {
 });
 
 process.on('uncaughtException', (err) => {
-  // Log error (Morgan - winston)
-  console.log(err); // eslint-disable-line no-console
+  Logger.error(err);
 });
 
 const PORT = process.env.APP_PORT ?? 3000;
 
 app.listen(PORT, () => {
-  console.log(`Running in port ${PORT}`); // eslint-disable-line no-console
+  Logger.info(`Running in port ${PORT}`);
 });
